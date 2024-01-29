@@ -1,7 +1,13 @@
-use iced::widget::{button, column, text};
-use iced::{executor, Alignment, Application, Command, Element, Sandbox, Settings, Theme};
+use iced::alignment;
+use iced::executor;
+use iced::theme::{self, Theme};
+use iced::time;
+use iced::widget::{button, column, container, row, text};
+use iced::{
+    Alignment, Application, Command, Element, Length, Settings, Subscription,
+};
 
-use std::time::{self, Duration, Instant};
+use iced::time::{Duration, Instant};
 
 pub fn main() -> iced::Result {
     Stopwatch::run(Settings::default())
@@ -30,10 +36,10 @@ impl Application for Stopwatch {
 
     type Message = Message;
     type Theme = Theme;
-    type Executor = executor::Executor;
+    type Executor = executor::Default;
     type Flags = ();
 
-    fn new(_flags: ()) -> (Self, Command<Message>) {
+    fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
         (
             Self {
                 duration: Duration::default(),
@@ -58,12 +64,20 @@ impl Application for Stopwatch {
                     *last_tick = now;
                 }
             },
-            Message::Reset => {
-                self.duration = Duration::default();
-            }
+            Message::Reset => self.duration = Duration::default(),
         }
 
         Command::none()
+    }
+
+    fn subscription(&self) -> iced::Subscription<Self::Message> {
+        let tick = match self.state {
+            State::Idle => Subscription::none(),
+            State::Ticking { .. } => {
+                time::every(Duration::from_millis(10)).map(Message::Tick)
+            }
+        };
+        Subscription::batch(vec![tick])
     }
 
     fn title(&self) -> String {
@@ -71,11 +85,50 @@ impl Application for Stopwatch {
     }
 
     fn view(&self) -> Element<Message> {
-        column![
-            button("+").on_press(Message::IncrementPressed),    // incr. button -> sends message
-            text(self.value).size(50),                          // Show value
-            button("-").on_press(Message::DecrementPressed)     // decr. button -> sends message
-        ].padding(20).align_items(Alignment::Center).into()
+        const MINUTE: u64 = 60;
+        const HOUR: u64 = 60 * MINUTE;
+
+        let seconds = self.duration.as_secs();
+
+        let duration = text(format!(
+            "{:0>2}:{:0>2}:{:0>2}.{:0>2}",
+            seconds / HOUR,
+            (seconds % HOUR) / MINUTE,
+            seconds % MINUTE,
+            self.duration.subsec_millis() / 10
+        ));
+
+        let button = |label| {
+            button(
+                text(label).horizontal_alignment(alignment::Horizontal::Center)
+            ).padding(10).width(80)
+        };
+
+        let toggle_button = {
+            let label = match self.state {
+                State::Idle => "Start",
+                State::Ticking { .. } => "Stop"
+            };
+            
+            button(label).on_press(Message::Toggle)
+        };
+
+        let reset_button = button("Reset").style(theme::Button::Destructive).on_press(Message::Reset);
+
+        let controls = row![toggle_button, reset_button].spacing(20);
+
+        let content = column![duration, controls].align_items(Alignment::Center).spacing(20);
+
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .into()
+    }
+
+    fn theme(&self) -> Self::Theme {
+        Theme::Dark
     }
 
 
