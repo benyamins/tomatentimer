@@ -10,6 +10,7 @@ use iced::time::{Duration, Instant};
 
 const MINUTE: u64 = 60;
 const HOUR: u64 = 60 * MINUTE;
+const POMODORO_CYCLE_SECS: u64 = MINUTE * 25;
 
 pub fn main() -> iced::Result {
     Stopwatch::run(Settings::default())
@@ -36,15 +37,15 @@ enum Message {
 
 impl Stopwatch {
     fn show_notification(&mut self) {
-        if self.duration.as_secs() == MINUTE * 25 && self.notification_shown == false {
+        if self.duration.as_secs() == POMODORO_CYCLE_SECS && self.notification_shown == false {
             // TODO: Fix the notification system.
             let handler = Notification::new()
                 .summary("test summary")
                 .body("test body")
                 .show();
             match handler {
-                Ok(_) => println!("Message sent"),
-                Err(some_err) => println!("Error sending the message: {:?}", some_err)
+                Ok(_) => println!("Notification shown."),
+                Err(some_err) => println!("Error sending the message: {:?}", some_err),
             }
             self.notification_shown = true;
         }
@@ -87,7 +88,10 @@ impl Application for Stopwatch {
                 }
                 self.show_notification();
             }
-            Message::Reset => self.duration = Duration::default(),
+            Message::Reset => {
+                self.duration = Duration::default();
+                self.notification_shown = false
+            }
         }
 
         Command::none()
@@ -102,7 +106,7 @@ impl Application for Stopwatch {
     }
 
     fn title(&self) -> String {
-        String::from("Counter in Iced")
+        String::from("Tomatentimer in Iced")
     }
 
     fn view(&self) -> Element<Message> {
