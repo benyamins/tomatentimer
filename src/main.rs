@@ -7,6 +7,8 @@ use iced::{
     Alignment, Application, Command, Element, Length, Settings, Subscription,
 };
 
+use notify_rust::Notification;
+
 use iced::time::{Duration, Instant};
 
 pub fn main() -> iced::Result {
@@ -22,6 +24,7 @@ enum State {
 struct Stopwatch {
     duration: time::Duration,
     state: State,
+    notification_shown: bool
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -44,6 +47,7 @@ impl Application for Stopwatch {
             Self {
                 duration: Duration::default(),
                 state: State::Idle,
+                notification_shown: false
             },
             Command::none()
         )
@@ -85,10 +89,17 @@ impl Application for Stopwatch {
     }
 
     fn view(&self) -> Element<Message> {
+        dbg!("view!");
         const MINUTE: u64 = 60;
         const HOUR: u64 = 60 * MINUTE;
 
         let seconds = self.duration.as_secs();
+
+        // if seconds == 4 && self.notification_shown == false {
+        //     // TODO: Fix the notification system.
+        //     let handler = Notification::new().summary("test summary").body("test body").show();
+        //     println!("{:?}", handler);
+        // }
 
         let duration = text(format!(
             "{:0>2}:{:0>2}:{:0>2}.{:0>2}",
