@@ -2,7 +2,7 @@
 
 ## About
 
-tool for testing out various frontends for GUI apps made in rust.
+Pomodoro-like app for testing out various frontends for GUI apps made in Rust.
 
 ## Tools
   - [Iced](https://www.github.com/iced-rs/iced)

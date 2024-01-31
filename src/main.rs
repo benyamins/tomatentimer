@@ -2,15 +2,18 @@ use iced::alignment;
 use iced::executor;
 use iced::theme::{self, Theme};
 use iced::time;
-use iced::widget::{button, column, container, row, text};
+use iced::time::{Duration, Instant};
+use iced::widget::Svg;
+use iced::widget::{button, column, container, row, svg, text, Row};
+use iced::Renderer;
 use iced::{Alignment, Application, Command, Element, Length, Settings, Subscription};
+
 use notify_rust::Notification;
 
-use iced::time::{Duration, Instant};
-
+const MILLISECOND: u64 = 1000;
 const MINUTE: u64 = 60;
 const HOUR: u64 = 60 * MINUTE;
-const POMODORO_CYCLE_SECS: u64 = MINUTE * 25;
+const POMODORO_CYCLE_MILLIS: u128 = (MINUTE * 1 * MILLISECOND) as u128;
 
 pub fn main() -> iced::Result {
     Stopwatch::run(Settings::default())
@@ -25,7 +28,7 @@ enum State {
 struct Stopwatch {
     duration: time::Duration,
     state: State,
-    notification_shown: bool,
+    tomatoes: u16,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -36,18 +39,21 @@ enum Message {
 }
 
 impl Stopwatch {
-    fn show_notification(&mut self) {
-        if self.duration.as_secs() == POMODORO_CYCLE_SECS && self.notification_shown == false {
-            // TODO: Fix the notification system.
-            let handler = Notification::new()
-                .summary("test summary")
-                .body("test body")
-                .show();
-            match handler {
-                Ok(_) => println!("Notification shown."),
-                Err(some_err) => println!("Error sending the message: {:?}", some_err),
+    fn show_notification(&self) {
+        if let Err(some_err) = Notification::new()
+            .summary("Tomatentimer")
+            .body("\nTomaten für Sie\nYou've reached a milestone 🐈!\n")
+            .show()
+        {
+            eprintln!("Error while sending the message:\n{:?}", some_err);
+        }
+    }
+    fn set_tomato_on_milestone(&mut self, show_notificacion: bool) {
+        if self.duration.as_secs() != 0 && self.duration.as_millis() % POMODORO_CYCLE_MILLIS == 0 {
+            self.tomatoes += 1;
+            if show_notificacion {
+                self.show_notification();
             }
-            self.notification_shown = true;
         }
     }
 }
@@ -64,7 +70,7 @@ impl Application for Stopwatch {
             Self {
                 duration: Duration::default(),
                 state: State::Idle,
-                notification_shown: false,
+                tomatoes: 0,
             },
             Command::none(),
         )
@@ -86,11 +92,10 @@ impl Application for Stopwatch {
                     self.duration += now - *last_tick;
                     *last_tick = now;
                 }
-                self.show_notification();
+                self.set_tomato_on_milestone(true);
             }
             Message::Reset => {
                 self.duration = Duration::default();
-                self.notification_shown = false
             }
         }
 
@@ -141,7 +146,44 @@ impl Application for Stopwatch {
 
         let controls = row![toggle_button, reset_button].spacing(20);
 
-        let content = column![duration, controls]
+        let tomatos = text(format!(
+            "{} Tomato{}",
+            self.tomatoes,
+            if self.tomatoes == 1 { "" } else { "s" }
+        ));
+
+        let handle = svg::Handle::from_path(format!(
+            "{}/resources/rottentomatoes.svg",
+            env!("CARGO_MANIFEST_DIR")
+        ));
+
+        // let mut svg_tomatos = Vec::new();
+
+        let mut svg_tomatos = Vec::new();
+
+        for _ in 0..=self.tomatoes {
+            let handle = handle.clone();
+            svg_tomatos.push(
+                svg(handle)
+                    .width(25)
+                    .height(25)
+                    .style(theme::Svg::default()),
+            );
+        }
+
+        let el: Vec<Element<'_, Message, Renderer>> = svg_tomatos
+            .iter()
+            .flatmap(|v| {
+                let mut t: Vec<Element<'_, Message, Renderer>> = Vec::new();
+                t.push(Text::new(format!("{}", v.name)).into());
+                t.push(Text::new(format!("{:?}", v.state)).into());
+                t
+            })
+            .collect();
+        let r: Row<Message, Renderer> = Row::with_children(el);
+        r.into();
+
+        let content = column![duration, controls, tomatos]
             .align_items(Alignment::Center)
             .spacing(20);
 
