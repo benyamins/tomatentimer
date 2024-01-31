@@ -157,33 +157,29 @@ impl Application for Stopwatch {
             env!("CARGO_MANIFEST_DIR")
         ));
 
-        // let mut svg_tomatos = Vec::new();
-
         let mut svg_tomatos = Vec::new();
 
-        for _ in 0..=self.tomatoes {
-            let handle = handle.clone();
-            svg_tomatos.push(
-                svg(handle)
-                    .width(25)
-                    .height(25)
-                    .style(theme::Svg::default()),
-            );
+        for _ in 1..=self.tomatoes {
+            svg_tomatos.push(handle.clone());
         }
 
         let el: Vec<Element<'_, Message, Renderer>> = svg_tomatos
             .iter()
-            .flatmap(|v| {
+            .flat_map(|v| {
                 let mut t: Vec<Element<'_, Message, Renderer>> = Vec::new();
-                t.push(Text::new(format!("{}", v.name)).into());
-                t.push(Text::new(format!("{:?}", v.state)).into());
+                t.push(
+                    Svg::new(v.clone())
+                        .width(25)
+                        .height(25)
+                        .style(theme::Svg::default())
+                        .into(),
+                );
                 t
             })
             .collect();
-        let r: Row<Message, Renderer> = Row::with_children(el);
-        r.into();
+        let r: Row<'_, Message, Renderer> = Row::with_children(el);
 
-        let content = column![duration, controls, tomatos]
+        let content = column![duration, controls, tomatos, r]
             .align_items(Alignment::Center)
             .spacing(20);
 
