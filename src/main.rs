@@ -13,7 +13,7 @@ use notify_rust::Notification;
 const MILLISECOND: u64 = 1000;
 const MINUTE: u64 = 60;
 const HOUR: u64 = 60 * MINUTE;
-const POMODORO_CYCLE_MILLIS: u128 = (MINUTE * 1 * MILLISECOND) as u128;
+const POMODORO_CYCLE_MILLIS: u128 = (MINUTE * 25 * MILLISECOND) as u128;
 
 pub fn main() -> iced::Result {
     Stopwatch::run(Settings::default())
@@ -48,10 +48,10 @@ impl Stopwatch {
             eprintln!("Error while sending the message:\n{:?}", some_err);
         }
     }
-    fn set_tomato_on_milestone(&mut self, show_notificacion: bool) {
+    fn set_tomato_on_milestone(&mut self, show_notification: bool) {
         if self.duration.as_secs() != 0 && self.duration.as_millis() % POMODORO_CYCLE_MILLIS == 0 {
             self.n_tomatoes += 1;
-            if show_notificacion {
+            if show_notification {
                 self.show_notification();
             }
         }
