@@ -28,7 +28,7 @@ enum State {
 struct Stopwatch {
     duration: time::Duration,
     state: State,
-    tomatoes: u16,
+    n_tomatoes: u16,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -50,7 +50,7 @@ impl Stopwatch {
     }
     fn set_tomato_on_milestone(&mut self, show_notificacion: bool) {
         if self.duration.as_secs() != 0 && self.duration.as_millis() % POMODORO_CYCLE_MILLIS == 0 {
-            self.tomatoes += 1;
+            self.n_tomatoes += 1;
             if show_notificacion {
                 self.show_notification();
             }
@@ -70,7 +70,7 @@ impl Application for Stopwatch {
             Self {
                 duration: Duration::default(),
                 state: State::Idle,
-                tomatoes: 0,
+                n_tomatoes: 0,
             },
             Command::none(),
         )
@@ -146,10 +146,10 @@ impl Application for Stopwatch {
 
         let controls = row![toggle_button, reset_button].spacing(20);
 
-        let tomatos = text(format!(
+        let n_tomatos_fmt = text(format!(
             "{} Tomato{}",
-            self.tomatoes,
-            if self.tomatoes == 1 { "" } else { "s" }
+            self.n_tomatoes,
+            if self.n_tomatoes == 1 { "" } else { "s" }
         ));
 
         let handle = svg::Handle::from_path(format!(
@@ -157,29 +157,19 @@ impl Application for Stopwatch {
             env!("CARGO_MANIFEST_DIR")
         ));
 
-        let mut svg_tomatos = Vec::new();
-
-        for _ in 1..=self.tomatoes {
-            svg_tomatos.push(handle.clone());
-        }
-
-        let el: Vec<Element<'_, Message, Renderer>> = svg_tomatos
-            .iter()
-            .flat_map(|v| {
-                let mut t: Vec<Element<'_, Message, Renderer>> = Vec::new();
-                t.push(
-                    Svg::new(v.clone())
-                        .width(25)
-                        .height(25)
-                        .style(theme::Svg::default())
-                        .into(),
-                );
-                t
+        let svg_tomatoe_elms: Vec<Element<'_, Message, Renderer>> = (0..self.n_tomatoes)
+            .map(|_| {
+                Svg::new(handle.clone())
+                    .width(25)
+                    .height(25)
+                    .style(theme::Svg::default())
+                    .into()
             })
             .collect();
-        let r: Row<'_, Message, Renderer> = Row::with_children(el);
 
-        let content = column![duration, controls, tomatos, r]
+        let svg_tomatoes_row: Row<'_, Message, Renderer> = Row::with_children(svg_tomatoe_elms);
+
+        let content = column![duration, controls, n_tomatos_fmt, svg_tomatoes_row]
             .align_items(Alignment::Center)
             .spacing(20);
 
