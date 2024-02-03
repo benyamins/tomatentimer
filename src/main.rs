@@ -13,7 +13,11 @@ fn main() {
     match selected_framework.as_str() {
         "iced" => match gui_frameworks::iced::run() {
             Ok(_) => println!("running `iced` frontend"),
-            Err(iced_err) => eprintln!("Error runing `iced` frontend {:?}", iced_err)
+            Err(error) => eprintln!("Error runing `iced` frontend {:?}", error)
+        },
+        "egui" => match gui_frameworks::egui::run() {
+            Ok(_) => println!("running `egui` frontend"),
+            Err(error) => eprintln!("Error runing `egui` frontend {:?}", error)
         },
         _ => eprintln!("`{}` not suported", selected_framework)
     }
